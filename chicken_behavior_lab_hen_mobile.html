@@ -1,0 +1,2223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐔 Hühner-Verhaltens-Simulator | Wissenschaftliche Simulation</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0f0a;
+            --bg-card: #121a12;
+            --bg-elevated: #1a251a;
+            --accent-gold: #d4a84b;
+            --accent-green: #4ecdc4;
+            --accent-red: #ff6b6b;
+            --accent-blue: #5b8def;
+            --accent-purple: #a855f7;
+            --accent-orange: #f97316;
+            --text-primary: #e8efe8;
+            --text-secondary: #8a9a8a;
+            --border: rgba(255,255,255,0.08);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: auto 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: var(--border);
+        }
+        
+        header {
+            grid-column: 1 / -1;
+            background: var(--bg-card);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            font-size: 2rem;
+            filter: drop-shadow(0 0 8px rgba(212,168,75,0.5));
+        }
+        
+        .logo h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .logo-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+        
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .panel {
+            background: var(--bg-card);
+            padding: 16px;
+            overflow-y: auto;
+        }
+        
+        .panel-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-gold);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .section {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+        
+        .section-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Environment Controls */
+        .env-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .env-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .env-btn:hover { 
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .env-btn.active {
+            background: rgba(78,205,196,0.2);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        
+        .env-btn .icon { font-size: 1.2rem; }
+        
+        /* Slider */
+        .slider-group {
+            margin: 10px 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+        
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-gold);
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(212,168,75,0.5);
+        }
+        
+        /* Behavior List */
+        .behavior-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+        
+        .behavior-item:last-child { border-bottom: none; }
+        
+        .behavior-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .behavior-name { flex: 1; }
+        
+        .behavior-bar {
+            width: 60px;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-left: 8px;
+        }
+        
+        .behavior-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        .behavior-pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            width: 35px;
+            text-align: right;
+            color: var(--text-secondary);
+        }
+        
+        /* Main View */
+        .main-view {
+            background: var(--bg-dark);
+            display: grid;
+            grid-template-rows: 1fr auto;
+            gap: 1px;
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+        }
+        
+        .transition-panel {
+            background: var(--bg-card);
+            padding: 16px;
+            max-height: 280px;
+            overflow: hidden;
+        }
+        
+        #transition-canvas {
+            width: 100%;
+            height: 220px;
+        }
+        
+        /* Right Panel */
+        .welfare-gauge {
+            position: relative;
+            height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .welfare-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--accent-green) 0deg,
+                var(--accent-green) calc(var(--welfare) * 3.6deg),
+                rgba(255,255,255,0.1) calc(var(--welfare) * 3.6deg)
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .welfare-inner {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .welfare-score {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-green);
+        }
+        
+        .welfare-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* State Display */
+        .state-grid {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .state-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+        }
+        
+        .state-label { color: var(--text-secondary); }
+        
+        .state-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+        
+        .state-value.behavior { color: var(--accent-green); }
+        .state-value.location { color: var(--accent-blue); }
+        .state-value.social { color: var(--accent-purple); }
+        
+        /* Need Bars */
+        .need-row {
+            display: flex;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 0.75rem;
+        }
+        
+        .need-icon { width: 24px; }
+        .need-name { flex: 1; color: var(--text-secondary); }
+        
+        .need-bar {
+            width: 80px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .need-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s, background 0.3s;
+        }
+        
+        .need-fill.low { background: var(--accent-green); }
+        .need-fill.medium { background: var(--accent-orange); }
+        .need-fill.high { background: var(--accent-red); }
+        
+        /* Transition Complexity */
+        .complexity-display {
+            text-align: center;
+            padding: 12px;
+        }
+        
+        .complexity-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .complexity-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .complexity-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .complexity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+        
+        /* Event Log */
+        .event-log {
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+        }
+        
+        .log-time { color: var(--text-secondary); }
+        .log-behavior { color: var(--accent-green); }
+        .log-transition { color: var(--accent-purple); }
+        .log-location { color: var(--accent-blue); }
+        
+        /* Action Buttons */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .action-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .action-btn.danger {
+            border-color: rgba(255,107,107,0.3);
+            color: var(--accent-red);
+        }
+        
+        .action-btn.danger:hover {
+            background: rgba(255,107,107,0.1);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulsing { animation: pulse 1.5s infinite; }
+    
+
+        /* ============================
+           Smartphone optimization
+           ============================ */
+        .mobile-nav {
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            header {
+                padding: 10px 12px;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .header-stats {
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .stat-item {
+                padding: 8px 10px;
+                min-width: 110px;
+            }
+
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                height: 100vh;
+            }
+
+            /* Mobile view switching */
+            #left-panel, #right-panel, .main-view {
+                grid-column: 1 / -1;
+                height: calc(100vh - 64px - 56px); /* header + mobile nav */
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Default: show simulation */
+            body:not([data-mobile-view]) #left-panel,
+            body:not([data-mobile-view]) #right-panel { display: none; }
+            body:not([data-mobile-view]) .main-view { display: block; }
+
+            body[data-mobile-view="controls"] #left-panel { display: block; }
+            body[data-mobile-view="controls"] .main-view,
+            body[data-mobile-view="controls"] #right-panel { display: none; }
+
+            body[data-mobile-view="sim"] .main-view { display: block; }
+            body[data-mobile-view="sim"] #left-panel,
+            body[data-mobile-view="sim"] #right-panel { display: none; }
+
+            body[data-mobile-view="metrics"] #right-panel { display: block; }
+            body[data-mobile-view="metrics"] .main-view,
+            body[data-mobile-view="metrics"] #left-panel { display: none; }
+
+            /* Canvas should fit width */
+            #canvas-container {
+                width: 100%;
+                height: 52vh;
+                min-height: 320px;
+            }
+
+            .transition-panel {
+                margin-top: 10px;
+            }
+
+            #transition-canvas {
+                width: 100% !important;
+                height: 220px !important;
+            }
+
+            /* Buttons & touch targets */
+            button, .env-btn {
+                min-height: 44px;
+            }
+            input[type="range"] {
+                height: 28px;
+            }
+
+            /* Mobile bottom navigation */
+            .mobile-nav {
+                display: flex;
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                height: 56px;
+                background: rgba(18,26,18,0.92);
+                backdrop-filter: blur(10px);
+                border-top: 1px solid var(--border);
+                z-index: 9999;
+            }
+            .mobile-nav button {
+                flex: 1;
+                background: transparent;
+                border: none;
+                color: var(--text-secondary);
+                font-family: inherit;
+                font-size: 0.85rem;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 2px;
+                padding: 6px 4px;
+            }
+            .mobile-nav button .micon {
+                font-size: 1.05rem;
+            }
+            .mobile-nav button.active {
+                color: var(--text-primary);
+            }
+
+            /* Make sure content isn't hidden behind nav */
+            .main-view, #left-panel, #right-panel {
+                padding-bottom: 12px;
+                box-sizing: border-box;
+            }
+        }
+</style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <span class="logo-icon">🐔</span>
+                <div>
+                    <h1>Chicken Behavior Lab</h1>
+                    <div class="logo-subtitle">Wissenschaftliche Verhaltens-Simulation</div>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-time">00:00</div>
+                    <div class="stat-label">Simulationszeit</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-transitions">0</div>
+                    <div class="stat-label">Übergänge</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="stat-behaviors">0</div>
+                    <div class="stat-label">Verhaltenstypen</div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Left Panel -->
+        <div class="panel" id="left-panel">
+            <div class="panel-title">🔬 Umgebung & Kontrolle</div>
+            
+            <div class="section">
+                <div class="section-header">🏠 Haltungssystem</div>
+                <div class="env-grid">
+                    <button class="env-btn" onclick="setEnvironment('cage')" id="btn-cage">
+                        <span class="icon">🔲</span>
+                        <span>Käfig</span>
+                    </button>
+                    <button class="env-btn active" onclick="setEnvironment('floor')" id="btn-floor">
+                        <span class="icon">🏠</span>
+                        <span>Bodenhaltung</span>
+                    </button>
+                    <button class="env-btn" onclick="setEnvironment('aviary')" id="btn-aviary">
+                        <span class="icon">🪺</span>
+                        <span>Voliere</span>
+                    </button>
+                    <button class="env-btn" onclick="setEnvironment('freerange')" id="btn-freerange">
+                        <span class="icon">🌿</span>
+                        <span>Freiland</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">⚠️ Stressoren</div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>🦅 Luftbedrohung</span>
+                        <span class="slider-value" id="v-aerial">0%</span>
+                    </div>
+                    <input type="range" id="s-aerial" min="0" max="100" value="0" oninput="updateSlider('aerial')">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>🦊 Bodenbedrohung</span>
+                        <span class="slider-value" id="v-ground">0%</span>
+                    </div>
+                    <input type="range" id="s-ground" min="0" max="100" value="0" oninput="updateSlider('ground')">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>👥 Besatzdichte</span>
+                        <span class="slider-value" id="v-density">50%</span>
+                    </div>
+                    <input type="range" id="s-density" min="10" max="100" value="50" oninput="updateSlider('density')">
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">⚡ Aktionen</div>
+                <div class="action-grid">
+                    <button class="action-btn" onclick="triggerAction('hawk')">🦅 Habicht!</button>
+                    <button class="action-btn" onclick="triggerAction('fox')">🦊 Fuchs!</button>
+                    <button class="action-btn" onclick="triggerAction('food')">🌾 Futter</button>
+                    <button class="action-btn" onclick="triggerAction('water')">💧 Wasser</button>
+                    <button class="action-btn" onclick="triggerAction('dustbath')">🏖️ Sandbad</button>
+                    <button class="action-btn danger" onclick="resetSimulation()">🔄 Reset</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">📊 Verhaltensverteilung</div>
+                <div id="behavior-distribution"></div>
+            </div>
+        </div>
+        
+        <!-- Main View -->
+        <div class="main-view">
+            <div id="canvas-container"></div>
+            <div class="transition-panel">
+                <div class="panel-title">🔀 Verhaltens-Übergänge (Live)</div>
+                <canvas id="transition-canvas"></canvas>
+            </div>
+        </div>
+        
+        <!-- Right Panel -->
+        <div class="panel" id="right-panel">
+            <div class="panel-title">📈 Analyse & Metriken</div>
+            
+            <div class="section">
+                <div class="section-header">🎯 Welfare Score</div>
+                <div class="welfare-gauge">
+                    <div class="welfare-circle" id="welfare-circle" style="--welfare: 75">
+                        <div class="welfare-inner">
+                            <div class="welfare-score" id="welfare-score">75</div>
+                            <div class="welfare-label">Punkte</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">🔗 Transition-Komplexität</div>
+                <div class="complexity-display">
+                    <div class="complexity-value" id="complexity-value">0.00</div>
+                    <div class="complexity-label">Shannon-Entropie</div>
+                    <div class="complexity-bar">
+                        <div class="complexity-fill" id="complexity-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">🐔 Aktueller Status</div>
+                <div class="state-grid">
+                    <div class="state-row">
+                        <span class="state-label">Verhalten</span>
+                        <span class="state-value behavior" id="current-behavior">STEHEN</span>
+                    </div>
+                    <div class="state-row">
+                        <span class="state-label">Ort</span>
+                        <span class="state-value location" id="current-location">STALL</span>
+                    </div>
+                    <div class="state-row">
+                        <span class="state-label">Sozial</span>
+                        <span class="state-value social" id="current-social">SOLO</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">❤️ Bedürfnisse</div>
+                <div id="needs-display"></div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">📝 Ereignis-Log</div>
+                <div class="event-log" id="event-log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+    // =========================================
+    // BEHAVIOR DEFINITIONS (from Shimmura et al.)
+    // =========================================
+    
+    const BEHAVIORS = {
+        ET: { name: 'Fressen', icon: '🌾', color: '#f97316', locations: ['FEEDER'] },
+        DK: { name: 'Trinken', icon: '💧', color: '#3b82f6', locations: ['DRINKER'] },
+        MV: { name: 'Bewegen', icon: '🚶', color: '#8b5cf6', locations: ['ANY'] },
+        ST: { name: 'Stehen', icon: '🧍', color: '#6b7280', locations: ['ANY'] },
+        RS: { name: 'Ruhen', icon: '😴', color: '#1e40af', locations: ['PERCH', 'NEST', 'FLOOR'] },
+        LS: { name: 'Scharren', icon: '🦶', color: '#84cc16', locations: ['LITTER', 'OUTDOOR'] },
+        PR: { name: 'Putzen', icon: '🪶', color: '#ec4899', locations: ['PERCH', 'FLOOR'] },
+        HS: { name: 'Kopfkratzen', icon: '🤚', color: '#f59e0b', locations: ['ANY'] },
+        BS: { name: 'Schütteln', icon: '💫', color: '#06b6d4', locations: ['ANY'] },
+        TW: { name: 'Schwanzwedeln', icon: '🌊', color: '#10b981', locations: ['ANY'] },
+        DB: { name: 'Staubbaden', icon: '🏖️', color: '#a855f7', locations: ['LITTER', 'DUSTBATH', 'OUTDOOR'] }
+    };
+    
+    // Transition probabilities (based on floor pen data from paper)
+    const TRANSITIONS_FLOOR = {
+        ET: { ET: 0.3, DK: 0.15, MV: 0.2, ST: 0.15, LS: 0.1, PR: 0.05, HS: 0.03, BS: 0.02 },
+        DK: { DK: 0.2, ET: 0.2, MV: 0.25, ST: 0.15, PR: 0.1, HS: 0.05, BS: 0.05 },
+        MV: { MV: 0.15, ST: 0.2, ET: 0.1, DK: 0.05, LS: 0.15, RS: 0.1, PR: 0.1, DB: 0.05, HS: 0.05, BS: 0.03, TW: 0.02 },
+        ST: { ST: 0.25, MV: 0.25, PR: 0.15, HS: 0.1, BS: 0.08, TW: 0.07, RS: 0.05, LS: 0.05 },
+        RS: { RS: 0.5, ST: 0.2, MV: 0.1, PR: 0.1, HS: 0.05, BS: 0.05 },
+        LS: { LS: 0.3, MV: 0.2, ST: 0.15, DB: 0.15, ET: 0.1, PR: 0.05, BS: 0.05 },
+        PR: { PR: 0.35, ST: 0.2, MV: 0.15, HS: 0.1, BS: 0.08, TW: 0.07, RS: 0.05 },
+        HS: { HS: 0.2, ST: 0.25, PR: 0.2, MV: 0.15, BS: 0.1, TW: 0.1 },
+        BS: { BS: 0.15, ST: 0.25, MV: 0.2, PR: 0.15, TW: 0.1, HS: 0.08, RS: 0.07 },
+        TW: { TW: 0.15, ST: 0.25, PR: 0.2, MV: 0.15, BS: 0.1, HS: 0.08, RS: 0.07 },
+        DB: { DB: 0.45, LS: 0.15, ST: 0.15, MV: 0.1, PR: 0.08, BS: 0.07 }
+    };
+    
+    // Cage transitions (simpler, from paper)
+    const TRANSITIONS_CAGE = {
+        ET: { ET: 0.5, DK: 0.15, ST: 0.2, MV: 0.1, PR: 0.05 },
+        DK: { DK: 0.3, ET: 0.3, ST: 0.25, MV: 0.1, PR: 0.05 },
+        MV: { MV: 0.2, ST: 0.5, ET: 0.15, DK: 0.1, PR: 0.05 },
+        ST: { ST: 0.5, MV: 0.2, ET: 0.1, DK: 0.05, PR: 0.1, HS: 0.03, BS: 0.02 },
+        RS: { RS: 0.6, ST: 0.3, MV: 0.05, PR: 0.05 },
+        LS: { LS: 0.1, ST: 0.4, MV: 0.3, ET: 0.2 },
+        PR: { PR: 0.4, ST: 0.35, MV: 0.15, HS: 0.05, BS: 0.05 },
+        HS: { HS: 0.15, ST: 0.45, PR: 0.25, MV: 0.15 },
+        BS: { BS: 0.1, ST: 0.5, PR: 0.25, MV: 0.15 },
+        TW: { TW: 0.1, ST: 0.5, PR: 0.25, MV: 0.15 },
+        DB: { DB: 0.1, ST: 0.5, MV: 0.3, PR: 0.1 }
+    };
+    
+    // Environment configurations
+    const ENVIRONMENTS = {
+        cage: {
+            name: 'Käfig',
+            transitions: TRANSITIONS_CAGE,
+            resources: ['FEEDER', 'DRINKER'],
+            spaceMultiplier: 0.3,
+            welfareBase: 30,
+            availableBehaviors: ['ET', 'DK', 'MV', 'ST', 'RS', 'PR', 'HS', 'BS']
+        },
+        floor: {
+            name: 'Bodenhaltung',
+            transitions: TRANSITIONS_FLOOR,
+            resources: ['FEEDER', 'DRINKER', 'LITTER', 'PERCH', 'NEST'],
+            spaceMultiplier: 0.7,
+            welfareBase: 60,
+            availableBehaviors: ['ET', 'DK', 'MV', 'ST', 'RS', 'LS', 'PR', 'HS', 'BS', 'TW', 'DB']
+        },
+        aviary: {
+            name: 'Voliere',
+            transitions: TRANSITIONS_FLOOR,
+            resources: ['FEEDER', 'DRINKER', 'LITTER', 'PERCH', 'NEST', 'TIER2', 'TIER3'],
+            spaceMultiplier: 0.85,
+            welfareBase: 75,
+            availableBehaviors: ['ET', 'DK', 'MV', 'ST', 'RS', 'LS', 'PR', 'HS', 'BS', 'TW', 'DB']
+        },
+        freerange: {
+            name: 'Freiland',
+            transitions: TRANSITIONS_FLOOR,
+            resources: ['FEEDER', 'DRINKER', 'LITTER', 'PERCH', 'NEST', 'OUTDOOR', 'DUSTBATH'],
+            spaceMultiplier: 1.0,
+            welfareBase: 90,
+            availableBehaviors: ['ET', 'DK', 'MV', 'ST', 'RS', 'LS', 'PR', 'HS', 'BS', 'TW', 'DB']
+        }
+    };
+    
+    // =========================================
+    // SIMULATION STATE
+    // =========================================
+    
+    const state = {
+        environment: 'floor',
+        currentBehavior: 'ST',
+        currentLocation: 'FLOOR',
+        behaviorTime: 0,
+        
+        // Needs (0-1, higher = more urgent)
+        needs: {
+            hunger: 0.3,
+            thirst: 0.2,
+            dustbath: 0.4,
+            rest: 0.2,
+            comfort: 0.3
+        },
+        
+        // Threats
+        threats: {
+            aerial: 0,
+            ground: 0
+        },
+        
+        // Statistics
+        stats: {
+            totalTransitions: 0,
+            behaviorCounts: {},
+            transitionMatrix: {},
+            startTime: Date.now()
+        },
+        
+        // Event log
+        log: []
+    };
+    
+    
+// =========================================
+// INTEGRATED HEN MODEL (Belief-State + Utility + Softmax)
+// Drop-in overrides for:
+//   selectNextBehavior(), transitionBehavior(), getBehaviorDuration(), updateNeeds()
+// =========================================
+
+// --- Seeded RNG (reproducible) ---
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const __rng = mulberry32(42);
+function rand() { return __rng(); }
+
+function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function alpha(dt, tau) { return 1 - Math.exp(-dt / Math.max(1e-6, tau)); }
+
+// --- Belief State init (single source of truth) ---
+function ensureBelief() {
+  if (!state.belief) {
+    state.belief = {
+      // homeostasis
+      hunger: state.needs?.hunger ?? 0.3,
+      thirst: state.needs?.thirst ?? 0.2,
+      fatigue: state.needs?.rest ?? 0.2,
+      comfortNeed: state.needs?.comfort ?? 0.3,
+      dustbathNeed: state.needs?.dustbath ?? 0.4,
+
+      heatLoad: 0.25,
+      pain: 0.0,
+
+      // affect
+      arousal: 0.2,
+      stress: 0.15,
+      valence: 0.2, // stored 0..1-ish, convert when needed
+
+      // safety
+      threat: 0.0,
+      uncertainty: 0.2,
+
+      // mode bookkeeping
+      modeTime: 0
+    };
+  }
+}
+
+function steepPenalty(x, threshold, sharpness) {
+  const d = x - threshold;
+  if (d <= 0) return 0;
+  return 1 / (1 + Math.exp(-sharpness * d));
+}
+
+function viabilityPenalty(b) {
+  // For poultry, threat and heat are big; include thirst too
+  const threatP = steepPenalty(b.threat, 0.55, 14);
+  const heatP = steepPenalty(b.heatLoad, 0.65, 10);
+  const thirstP = steepPenalty(b.thirst, 0.7, 8);
+  const painP = steepPenalty(b.pain, 0.5, 12);
+  return clamp01(0.38 * threatP + 0.28 * heatP + 0.16 * thirstP + 0.18 * painP);
+}
+
+// --- Evidence derived from current UI/env state ---
+function buildEvidence() {
+  const env = ENVIRONMENTS[state.environment];
+
+  // resource salience from environment availability
+  const feeder = 0.8;
+  const drinker = 0.7;
+
+  const litter = env.resources.includes('LITTER') ? 0.9 : 0.05;
+  const dust = env.resources.includes('DUSTBATH') ? 0.9 : 0.2;
+  const perch = env.resources.includes('PERCH') ? 0.6 : 0.15;
+
+  // stressors from sliders (besatzdichte optional)
+  const aerial = clamp01(state.threats.aerial);
+  const ground = clamp01(state.threats.ground);
+  const densityEl = document.getElementById('s-density');
+  const density = clamp01(((densityEl && +densityEl.value) ? +densityEl.value : 50) / 100);
+
+  // Simple mapping: threat is dominated by predator cues, and crowding adds uncertainty/stress
+  const threatInstant = clamp01(0.75 * Math.max(aerial, ground) + 0.15 * density);
+  const noise = clamp01(0.05 + 0.35 * Math.max(aerial, ground));
+  const motion = clamp01(0.10 + 0.30 * Math.max(aerial, ground));
+
+  return {
+    env,
+    feederSalience: feeder,
+    drinkerSalience: drinker,
+    litterSalience: litter,
+    dustSalience: dust,
+    perchSalience: perch,
+    density,
+    threatInstant,
+    noise,
+    motion
+  };
+}
+
+// --- Belief dynamics (continuous, non-deterministic through sampling only) ---
+function updateBeliefFromWorld(dtSec) {
+  ensureBelief();
+  const b = state.belief;
+  const ev = buildEvidence();
+
+  // Couple belief to needs (keeps UI semantics)
+  b.hunger = clamp01(state.needs.hunger);
+  b.thirst = clamp01(state.needs.thirst);
+  b.fatigue = clamp01(state.needs.rest);
+  b.comfortNeed = clamp01(state.needs.comfort);
+  b.dustbathNeed = clamp01(state.needs.dustbath);
+
+  // Threat / uncertainty dynamics
+  b.threat = clamp01(lerp(b.threat, ev.threatInstant, alpha(dtSec, 1.8)));
+  const uncTarget = clamp01(0.45 * ev.motion + 0.45 * ev.noise + 0.20 * ev.density - 0.25 * (1 - b.threat));
+  b.uncertainty = clamp01(lerp(b.uncertainty, uncTarget, alpha(dtSec, 5.0)));
+
+  // Arousal / stress
+  const arousalTarget = clamp01(0.25 * ev.motion + 0.25 * ev.noise + 0.60 * b.threat);
+  b.arousal = clamp01(lerp(b.arousal, arousalTarget, alpha(dtSec, 1.2)));
+
+  const stressTarget = clamp01(0.65 * b.threat + 0.25 * b.uncertainty + 0.25 * ev.density);
+  b.stress = clamp01(lerp(b.stress, stressTarget, alpha(dtSec, 3.0)));
+
+  // Heat load: mild baseline + activity proxy from arousal
+  const heatTarget = clamp01(0.20 + 0.20 * b.arousal);
+  b.heatLoad = clamp01(lerp(b.heatLoad, heatTarget, alpha(dtSec, 10.0)));
+
+  // Valence proxy: decreases with stress/threat, increases when needs are low
+  const needsAvg = (b.hunger + b.thirst + b.fatigue + b.comfortNeed + b.dustbathNeed) / 5;
+  const valTarget01 = clamp01(0.75 * (1 - needsAvg) + 0.25 * (1 - b.stress));
+  b.valence = lerp(b.valence, valTarget01, alpha(dtSec, 8.0));
+
+  b.modeTime += dtSec;
+}
+
+function softmaxPick(items, temperature) {
+  const t = Math.max(1e-3, temperature);
+  let maxS = -Infinity;
+  for (const it of items) maxS = Math.max(maxS, it.score);
+
+  let sum = 0;
+  const exps = items.map(it => {
+    const v = Math.exp((it.score - maxS) / t);
+    sum += v;
+    return v;
+  });
+
+  let r = rand() * sum;
+  for (let i = 0; i < items.length; i++) {
+    r -= exps[i];
+    if (r <= 0) return items[i].item;
+  }
+  return items[items.length - 1].item;
+}
+
+function policyTemperature() {
+  ensureBelief();
+  const b = state.belief;
+  // stressed = more deterministic; moderate arousal + low stress = more variable
+  const temp = 0.10 + 0.70 * (b.arousal * (1 - b.stress));
+  return Math.max(0.08, temp);
+}
+
+// --- Utility model per behavior code ---
+function behaviorUtility(code, ev) {
+  ensureBelief();
+  const b = state.belief;
+  const v = viabilityPenalty(b);
+
+  // Convert valence to 0..1
+  const val01 = clamp01(b.valence);
+
+  // Maintenance
+  const uEat = clamp01(0.85 * b.hunger + 0.60 * ev.feederSalience) * (1 - 0.25 * v);
+  const uDrink = clamp01(0.90 * b.thirst + 0.70 * ev.drinkerSalience) * (1 - 0.20 * v);
+  const uRest = clamp01(0.75 * b.fatigue + 0.25 * b.stress) * (1 - 0.35 * v);
+
+  // Litter / comfort cluster
+  const uDust = clamp01(0.75 * b.dustbathNeed + 0.55 * ev.dustSalience + 0.20 * (1 - b.threat)) * (1 - 0.55 * v);
+  const uScratch = clamp01(0.60 * b.dustbathNeed + 0.60 * ev.litterSalience + 0.20 * (1 - b.threat)) * (1 - 0.45 * v);
+
+  const comfortOk = clamp01(1 - b.comfortNeed);
+  const uPreen = clamp01(0.45 * comfortOk + 0.25 * val01 + 0.15 * ev.perchSalience) * (1 - 0.40 * v);
+  const uHeadScratch = clamp01(0.35 * comfortOk + 0.20 * val01) * (1 - 0.40 * v);
+  const uBodyShake = clamp01(0.25 * comfortOk + 0.25 * b.arousal) * (1 - 0.45 * v);
+  const uTailWag = clamp01(0.25 * comfortOk + 0.25 * b.arousal) * (1 - 0.45 * v);
+
+  // Default locomotion/standing: increase under threat/uncertainty
+  const alert = clamp01(0.60 * b.uncertainty + 0.70 * b.threat);
+  const uMove = clamp01(0.25 + 0.45 * alert + 0.20 * (1 - b.fatigue));
+  const uStand = clamp01(0.30 + 0.35 * alert);
+
+  // Hard safety override: predator pressure -> MOVE dominates
+  if (b.threat > 0.55) {
+    if (code === "MV") return 1.25;
+    if (code === "ST") return 0.95;
+  }
+
+  switch (code) {
+    case "ET": return uEat;
+    case "DK": return uDrink;
+    case "RS": return uRest;
+    case "DB": return uDust;
+    case "LS": return uScratch;
+    case "PR": return uPreen;
+    case "HS": return uHeadScratch;
+    case "BS": return uBodyShake;
+    case "TW": return uTailWag;
+    case "MV": return uMove;
+    case "ST": return uStand;
+    default: return 0.2;
+  }
+}
+
+// --- Override: behavior selection now uses (transition prior) x (utility) ---
+function selectNextBehavior() {
+  ensureBelief();
+
+  const ev = buildEvidence();
+  const env = ev.env;
+
+  const candidates = env.availableBehaviors.slice();
+  const priorRow = (env.transitions[state.currentBehavior] || {});
+  const eps = 0.001;
+
+  // score = log(prior + eps) + kU * log(utility + eps)
+  const kU = 2.2;
+
+  const items = candidates.map(code => {
+    const prior = (priorRow[code] != null ? priorRow[code] : 0);
+    const u = behaviorUtility(code, ev);
+    const score = Math.log(prior + eps) + kU * Math.log(u + eps);
+    return { item: code, score };
+  });
+
+  const next = softmaxPick(items, policyTemperature());
+
+  if (state.belief.threat > 0.75) return "MV";
+  return next;
+}
+
+// --- Override: duration sampling uses seeded RNG ---
+function getBehaviorDuration(behavior) {
+  const baseDurations = {
+    ET: 3000, DK: 2000, MV: 2500, ST: 3000, RS: 8000,
+    LS: 4000, PR: 5000, HS: 1500, BS: 800, TW: 600, DB: 10000
+  };
+  const base = baseDurations[behavior] || 2000;
+
+  ensureBelief();
+  const b = state.belief;
+  const frag = 1 - 0.35 * b.stress;
+
+  return base * frag * (0.75 + rand() * 0.50);
+}
+
+// --- Override: transitionBehavior uses new selector, but preserves logging/stats ---
+function transitionBehavior() {
+  const prevBehavior = state.currentBehavior;
+  const nextBehavior = selectNextBehavior();
+
+  if (nextBehavior !== prevBehavior) {
+    state.stats.transitionMatrix[prevBehavior][nextBehavior]++;
+    state.stats.totalTransitions++;
+
+    addLog(`${BEHAVIORS[prevBehavior].icon} → ${BEHAVIORS[nextBehavior].icon}`, 'transition');
+
+    state.currentBehavior = nextBehavior;
+    state.behaviorTime = 0;
+
+    ensureBelief();
+    state.belief.modeTime = 0;
+  }
+
+  state.stats.behaviorCounts[state.currentBehavior]++;
+  return getBehaviorDuration(state.currentBehavior);
+}
+
+// --- Override: updateNeeds stays compatible with UI but also updates belief dynamics ---
+function updateNeeds(dt) {
+  const dtSec = dt / 1000;
+
+  // Increase needs over time (same semantics)
+  state.needs.hunger = Math.min(1, state.needs.hunger + dtSec / 300);
+  state.needs.thirst = Math.min(1, state.needs.thirst + dtSec / 200);
+  state.needs.dustbath = Math.min(1, state.needs.dustbath + dtSec / 600);
+  state.needs.rest = Math.min(1, state.needs.rest + dtSec / 400);
+  state.needs.comfort = Math.min(1, state.needs.comfort + dtSec / 500);
+
+  // Satisfy needs based on behavior
+  switch (state.currentBehavior) {
+    case 'ET':
+      state.needs.hunger = Math.max(0, state.needs.hunger - dtSec * 0.15);
+      break;
+    case 'DK':
+      state.needs.thirst = Math.max(0, state.needs.thirst - dtSec * 0.2);
+      break;
+    case 'DB':
+      state.needs.dustbath = Math.max(0, state.needs.dustbath - dtSec * 0.1);
+      state.needs.comfort = Math.max(0, state.needs.comfort - dtSec * 0.08);
+      break;
+    case 'RS':
+      state.needs.rest = Math.max(0, state.needs.rest - dtSec * 0.12);
+      break;
+    case 'PR':
+    case 'HS':
+    case 'BS':
+    case 'TW':
+      state.needs.comfort = Math.max(0, state.needs.comfort - dtSec * 0.1);
+      break;
+  }
+
+  // Threats increase comfort need (same semantics)
+  if (state.threats.aerial > 0 || state.threats.ground > 0) {
+    state.needs.comfort = Math.min(1, state.needs.comfort + dtSec * 0.3);
+  }
+
+  // Decay threats (same semantics)
+  state.threats.aerial = Math.max(0, state.threats.aerial - dtSec * 0.1);
+  state.threats.ground = Math.max(0, state.threats.ground - dtSec * 0.12);
+
+  // New: update continuous belief state each frame from the current world and needs
+  updateBeliefFromWorld(dtSec);
+}
+
+// Initialize behavior counts
+    Object.keys(BEHAVIORS).forEach(b => {
+        state.stats.behaviorCounts[b] = 0;
+        state.stats.transitionMatrix[b] = {};
+        Object.keys(BEHAVIORS).forEach(b2 => {
+            state.stats.transitionMatrix[b][b2] = 0;
+        });
+    });
+    
+    // =========================================
+    // THREE.JS SETUP
+    // =========================================
+    
+    let scene, camera, renderer, chicken = {};
+    let animState = {
+        walkPhase: 0,
+        peckPhase: 0,
+        scratchPhase: 0,
+        dustbathPhase: 0,
+        preelPhase: 0,
+        bodyPos: { x: 0, z: 0 },
+        bodyRot: 0,
+        targetRot: 0,
+        headStable: { x: 0, y: 0.32, z: 0.15 }
+    };
+    
+    function initThree() {
+        const container = document.getElementById('canvas-container');
+        
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a251a);
+        
+        camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.set(0.8, 0.6, 1.2);
+        camera.lookAt(0, 0.2, 0);
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+        
+        // Lighting
+        const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambient);
+        
+        const sun = new THREE.DirectionalLight(0xfffacd, 0.8);
+        sun.position.set(5, 8, 5);
+        sun.castShadow = true;
+        scene.add(sun);
+        
+        // Ground
+        const groundGeo = new THREE.PlaneGeometry(10, 10);
+        const groundMat = new THREE.MeshStandardMaterial({ 
+            color: 0x3d6b1a,
+            roughness: 0.9
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Litter patches
+        for (let i = 0; i < 30; i++) {
+            const litter = new THREE.Mesh(
+                new THREE.BoxGeometry(0.02 + Math.random() * 0.03, 0.005, 0.02 + Math.random() * 0.03),
+                new THREE.MeshStandardMaterial({ color: 0x8b7355 })
+            );
+            litter.position.set(
+                (Math.random() - 0.5) * 2,
+                0.003,
+                (Math.random() - 0.5) * 2
+            );
+            litter.rotation.y = Math.random() * Math.PI;
+            scene.add(litter);
+        }
+        
+        createChicken();
+        createEnvironmentElements();
+        
+        window.addEventListener('resize', onResize);
+    }
+    
+    function createChicken() {
+        chicken.group = new THREE.Group();
+        
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd4a574, roughness: 0.7 });
+        const combMat = new THREE.MeshStandardMaterial({ color: 0xff2222 });
+        const beakMat = new THREE.MeshStandardMaterial({ color: 0xf5c542 });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const legMat = new THREE.MeshStandardMaterial({ color: 0xe8b732 });
+        
+        // Body
+        chicken.bodyGroup = new THREE.Group();
+        chicken.group.add(chicken.bodyGroup);
+        
+        const bodyGeo = new THREE.SphereGeometry(0.11, 16, 12);
+        bodyGeo.scale(1, 0.85, 1.25);
+        chicken.body = new THREE.Mesh(bodyGeo, bodyMat);
+        chicken.body.castShadow = true;
+        chicken.bodyGroup.add(chicken.body);
+        
+        // Wings
+        const wingGeo = new THREE.SphereGeometry(0.07, 8, 6);
+        wingGeo.scale(0.4, 0.55, 1);
+        chicken.wingL = new THREE.Mesh(wingGeo, bodyMat);
+        chicken.wingL.position.set(0.09, 0, -0.02);
+        chicken.wingL.rotation.z = -0.15;
+        chicken.bodyGroup.add(chicken.wingL);
+        
+        chicken.wingR = new THREE.Mesh(wingGeo, bodyMat);
+        chicken.wingR.position.set(-0.09, 0, -0.02);
+        chicken.wingR.rotation.z = 0.15;
+        chicken.bodyGroup.add(chicken.wingR);
+        
+        // Tail
+        chicken.tail = new THREE.Mesh(
+            new THREE.ConeGeometry(0.05, 0.12, 6),
+            new THREE.MeshStandardMaterial({ color: 0x8b6914 })
+        );
+        chicken.tail.position.set(0, 0.02, -0.14);
+        chicken.tail.rotation.x = -0.4;
+        chicken.bodyGroup.add(chicken.tail);
+        
+        // Legs
+        chicken.legL = createLeg(legMat);
+        chicken.legL.position.set(0.035, -0.05, 0);
+        chicken.bodyGroup.add(chicken.legL);
+        
+        chicken.legR = createLeg(legMat);
+        chicken.legR.position.set(-0.035, -0.05, 0);
+        chicken.bodyGroup.add(chicken.legR);
+        
+        // Head (separate for stabilization)
+        chicken.headGroup = new THREE.Group();
+        scene.add(chicken.headGroup);
+        
+        const headMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.05, 12, 10),
+            bodyMat
+        );
+        headMesh.castShadow = true;
+        chicken.headGroup.add(headMesh);
+        
+        // Beak
+        const beakUpper = new THREE.Mesh(
+            new THREE.ConeGeometry(0.016, 0.035, 6),
+            beakMat
+        );
+        beakUpper.rotation.x = Math.PI / 2;
+        beakUpper.position.set(0, 0, 0.05);
+        chicken.headGroup.add(beakUpper);
+        
+        chicken.beakLower = new THREE.Mesh(
+            new THREE.ConeGeometry(0.01, 0.022, 6),
+            beakMat
+        );
+        chicken.beakLower.rotation.x = Math.PI / 2;
+        chicken.beakLower.position.set(0, -0.01, 0.04);
+        chicken.headGroup.add(chicken.beakLower);
+        
+        // Eyes
+        chicken.eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 8), eyeMat);
+        chicken.eyeL.position.set(0.03, 0.012, 0.025);
+        chicken.headGroup.add(chicken.eyeL);
+        
+        chicken.eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.01, 8, 8), eyeMat);
+        chicken.eyeR.position.set(-0.03, 0.012, 0.025);
+        chicken.headGroup.add(chicken.eyeR);
+        
+        // Comb
+        chicken.comb = new THREE.Mesh(
+            new THREE.BoxGeometry(0.012, 0.04, 0.045),
+            combMat
+        );
+        chicken.comb.position.set(0, 0.05, 0);
+        chicken.headGroup.add(chicken.comb);
+        
+        // Wattles
+        chicken.wattleL = new THREE.Mesh(
+            new THREE.SphereGeometry(0.012, 8, 8),
+            combMat
+        );
+        chicken.wattleL.scale.set(0.6, 1, 0.6);
+        chicken.wattleL.position.set(0.012, -0.035, 0.025);
+        chicken.headGroup.add(chicken.wattleL);
+        
+        chicken.wattleR = chicken.wattleL.clone();
+        chicken.wattleR.position.set(-0.012, -0.035, 0.025);
+        chicken.headGroup.add(chicken.wattleR);
+        
+        // Position
+        chicken.group.position.y = 0.18;
+        chicken.headGroup.position.set(0, 0.32, 0.15);
+        
+        scene.add(chicken.group);
+    }
+    
+    function createLeg(mat) {
+        const leg = new THREE.Group();
+        
+        const shin = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.006, 0.005, 0.08),
+            mat
+        );
+        shin.position.y = -0.04;
+        leg.add(shin);
+        
+        const foot = new THREE.Mesh(
+            new THREE.BoxGeometry(0.03, 0.006, 0.04),
+            mat
+        );
+        foot.position.set(0, -0.08, 0.012);
+        leg.add(foot);
+        
+        return leg;
+    }
+    
+    function createEnvironmentElements() {
+        // Feeder
+        const feederGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.06, 12);
+        const feederMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+        const feeder = new THREE.Mesh(feederGeo, feederMat);
+        feeder.position.set(-0.6, 0.03, 0.4);
+        scene.add(feeder);
+        
+        // Drinker
+        const drinkerGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.15, 12);
+        const drinkerMat = new THREE.MeshStandardMaterial({ color: 0x4488ff, transparent: true, opacity: 0.7 });
+        const drinker = new THREE.Mesh(drinkerGeo, drinkerMat);
+        drinker.position.set(0.6, 0.075, 0.4);
+        scene.add(drinker);
+        
+        // Perch
+        const perchGeo = new THREE.BoxGeometry(0.8, 0.04, 0.04);
+        const perchMat = new THREE.MeshStandardMaterial({ color: 0x654321 });
+        const perch = new THREE.Mesh(perchGeo, perchMat);
+        perch.position.set(0, 0.25, -0.5);
+        scene.add(perch);
+        
+        // Nest box
+        const nestGeo = new THREE.BoxGeometry(0.25, 0.2, 0.25);
+        const nestMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+        const nest = new THREE.Mesh(nestGeo, nestMat);
+        nest.position.set(-0.7, 0.1, -0.5);
+        scene.add(nest);
+        
+        // Dustbath area
+        const dustGeo = new THREE.CircleGeometry(0.2, 16);
+        const dustMat = new THREE.MeshStandardMaterial({ color: 0xc4a86c });
+        const dust = new THREE.Mesh(dustGeo, dustMat);
+        dust.rotation.x = -Math.PI / 2;
+        dust.position.set(0.5, 0.005, -0.3);
+        scene.add(dust);
+    }
+    
+    // =========================================
+    // BEHAVIOR LOGIC
+    // =========================================
+    
+    function selectNextBehavior() {
+        const env = ENVIRONMENTS[state.environment];
+        const transitions = env.transitions[state.currentBehavior] || {};
+        
+        // Modify probabilities based on needs
+        let modifiedProbs = { ...transitions };
+        
+        // Hunger increases eating probability
+        if (state.needs.hunger > 0.6 && modifiedProbs.ET !== undefined) {
+            modifiedProbs.ET = (modifiedProbs.ET || 0) + state.needs.hunger * 0.3;
+        }
+        
+        // Thirst increases drinking probability
+        if (state.needs.thirst > 0.6 && modifiedProbs.DK !== undefined) {
+            modifiedProbs.DK = (modifiedProbs.DK || 0) + state.needs.thirst * 0.3;
+        }
+        
+        // Dustbath need
+        if (state.needs.dustbath > 0.7 && env.availableBehaviors.includes('DB')) {
+            modifiedProbs.DB = (modifiedProbs.DB || 0) + state.needs.dustbath * 0.3;
+            modifiedProbs.LS = (modifiedProbs.LS || 0) + state.needs.dustbath * 0.15;
+        }
+        
+        // Rest need
+        if (state.needs.rest > 0.7) {
+            modifiedProbs.RS = (modifiedProbs.RS || 0) + state.needs.rest * 0.3;
+        }
+        
+        // Comfort behaviors when comfortable
+        if (state.needs.comfort < 0.3) {
+            ['PR', 'HS', 'BS', 'TW'].forEach(b => {
+                if (env.availableBehaviors.includes(b)) {
+                    modifiedProbs[b] = (modifiedProbs[b] || 0) + 0.1;
+                }
+            });
+        }
+        
+        // Threats override everything
+        if (state.threats.aerial > 0.5 || state.threats.ground > 0.5) {
+            return 'MV'; // Flee
+        }
+        
+        // Filter to available behaviors
+        const available = {};
+        let total = 0;
+        Object.keys(modifiedProbs).forEach(b => {
+            if (env.availableBehaviors.includes(b)) {
+                available[b] = modifiedProbs[b];
+                total += modifiedProbs[b];
+            }
+        });
+        
+        // Normalize and select
+        const rand = Math.random() * total;
+        let cumulative = 0;
+        for (const [behavior, prob] of Object.entries(available)) {
+            cumulative += prob;
+            if (rand <= cumulative) {
+                return behavior;
+            }
+        }
+        
+        return 'ST'; // Default
+    }
+    
+    function getBehaviorDuration(behavior) {
+        const baseDurations = {
+            ET: 3000, DK: 2000, MV: 2500, ST: 3000, RS: 8000,
+            LS: 4000, PR: 5000, HS: 1500, BS: 800, TW: 600, DB: 10000
+        };
+        const base = baseDurations[behavior] || 2000;
+        return base * (0.7 + Math.random() * 0.6);
+    }
+    
+    function transitionBehavior() {
+        const prevBehavior = state.currentBehavior;
+        const nextBehavior = selectNextBehavior();
+        
+        if (nextBehavior !== prevBehavior) {
+            // Record transition
+            state.stats.transitionMatrix[prevBehavior][nextBehavior]++;
+            state.stats.totalTransitions++;
+            
+            // Log
+            addLog(`${BEHAVIORS[prevBehavior].icon} → ${BEHAVIORS[nextBehavior].icon}`, 'transition');
+            
+            state.currentBehavior = nextBehavior;
+            state.behaviorTime = 0;
+        }
+        
+        state.stats.behaviorCounts[state.currentBehavior]++;
+        
+        return getBehaviorDuration(state.currentBehavior);
+    }
+    
+    // =========================================
+    // NEEDS & WELFARE
+    // =========================================
+    
+    function updateNeeds(dt) {
+        const dtSec = dt / 1000;
+        
+        // Increase needs over time
+        state.needs.hunger = Math.min(1, state.needs.hunger + dtSec / 300);
+        state.needs.thirst = Math.min(1, state.needs.thirst + dtSec / 200);
+        state.needs.dustbath = Math.min(1, state.needs.dustbath + dtSec / 600);
+        state.needs.rest = Math.min(1, state.needs.rest + dtSec / 400);
+        state.needs.comfort = Math.min(1, state.needs.comfort + dtSec / 500);
+        
+        // Satisfy needs based on behavior
+        switch (state.currentBehavior) {
+            case 'ET':
+                state.needs.hunger = Math.max(0, state.needs.hunger - dtSec * 0.15);
+                break;
+            case 'DK':
+                state.needs.thirst = Math.max(0, state.needs.thirst - dtSec * 0.2);
+                break;
+            case 'DB':
+                state.needs.dustbath = Math.max(0, state.needs.dustbath - dtSec * 0.1);
+                state.needs.comfort = Math.max(0, state.needs.comfort - dtSec * 0.08);
+                break;
+            case 'RS':
+                state.needs.rest = Math.max(0, state.needs.rest - dtSec * 0.12);
+                break;
+            case 'PR':
+            case 'HS':
+            case 'BS':
+            case 'TW':
+                state.needs.comfort = Math.max(0, state.needs.comfort - dtSec * 0.1);
+                break;
+        }
+        
+        // Threats increase needs
+        if (state.threats.aerial > 0 || state.threats.ground > 0) {
+            state.needs.comfort = Math.min(1, state.needs.comfort + dtSec * 0.3);
+        }
+        
+        // Decay threats
+        state.threats.aerial = Math.max(0, state.threats.aerial - dtSec * 0.1);
+        state.threats.ground = Math.max(0, state.threats.ground - dtSec * 0.12);
+    }
+    
+    function calculateWelfare() {
+        const env = ENVIRONMENTS[state.environment];
+        let welfare = env.welfareBase;
+        
+        // Needs satisfaction (negative impact)
+        const avgNeed = (state.needs.hunger + state.needs.thirst + state.needs.dustbath + 
+                        state.needs.rest + state.needs.comfort) / 5;
+        welfare -= avgNeed * 30;
+        
+        // Transition complexity (positive impact)
+        const complexity = calculateComplexity();
+        welfare += complexity * 15;
+        
+        // Behavior diversity (positive impact)
+        const diversity = calculateBehaviorDiversity();
+        welfare += diversity * 10;
+        
+        // Threats (negative impact)
+        welfare -= (state.threats.aerial + state.threats.ground) * 20;
+        
+        return Math.max(0, Math.min(100, Math.round(welfare)));
+    }
+    
+    function calculateComplexity() {
+        // Shannon entropy of transition matrix
+        let totalTransitions = 0;
+        const transitions = [];
+        
+        Object.values(state.stats.transitionMatrix).forEach(row => {
+            Object.values(row).forEach(count => {
+                if (count > 0) {
+                    transitions.push(count);
+                    totalTransitions += count;
+                }
+            });
+        });
+        
+        if (totalTransitions === 0) return 0;
+        
+        let entropy = 0;
+        transitions.forEach(count => {
+            const p = count / totalTransitions;
+            if (p > 0) {
+                entropy -= p * Math.log2(p);
+            }
+        });
+        
+        // Normalize to 0-1 range (max entropy ~7 for 11 behaviors)
+        return Math.min(1, entropy / 5);
+    }
+    
+    function calculateBehaviorDiversity() {
+        const counts = Object.values(state.stats.behaviorCounts);
+        const total = counts.reduce((a, b) => a + b, 0);
+        if (total === 0) return 0;
+        
+        let entropy = 0;
+        counts.forEach(count => {
+            if (count > 0) {
+                const p = count / total;
+                entropy -= p * Math.log2(p);
+            }
+        });
+        
+        // Normalize
+        const maxEntropy = Math.log2(Object.keys(BEHAVIORS).length);
+        return entropy / maxEntropy;
+    }
+    
+    // =========================================
+    // ANIMATION
+    // =========================================
+    
+    function animateChicken(dt, behavior) {
+        const dtSec = dt / 1000;
+        
+        // Reset animations
+        chicken.legL.rotation.x *= 0.9;
+        chicken.legR.rotation.x *= 0.9;
+        chicken.body.position.y *= 0.9;
+        chicken.headGroup.rotation.x *= 0.9;
+        
+        // Behavior-specific animations
+        switch (behavior) {
+            case 'MV': // Moving
+                animState.walkPhase += dtSec * 8;
+                chicken.legL.rotation.x = Math.sin(animState.walkPhase) * 0.35;
+                chicken.legR.rotation.x = -Math.sin(animState.walkPhase) * 0.35;
+                chicken.body.position.y = Math.abs(Math.sin(animState.walkPhase * 2)) * 0.01;
+                
+                // Move position
+                animState.bodyPos.x += Math.sin(animState.bodyRot) * dtSec * 0.15;
+                animState.bodyPos.z += Math.cos(animState.bodyRot) * dtSec * 0.15;
+                
+                // Random direction changes
+                if (Math.random() < dtSec) {
+                    animState.targetRot += (Math.random() - 0.5) * 1.5;
+                }
+                break;
+                
+            case 'ET': // Eating
+                animState.peckPhase += dtSec * 10;
+                const peck = Math.sin(animState.peckPhase);
+                if (peck > 0) {
+                    chicken.headGroup.position.y = 0.28 - peck * 0.08;
+                    chicken.headGroup.rotation.x = peck * 0.4;
+                }
+                break;
+                
+            case 'DK': // Drinking
+                animState.peckPhase += dtSec * 3;
+                chicken.headGroup.position.y = 0.32 + Math.sin(animState.peckPhase) * 0.03;
+                chicken.headGroup.rotation.x = -0.3;
+                break;
+                
+            case 'ST': // Standing
+                // Occasional head movements
+                if (Math.random() < dtSec * 2) {
+                    chicken.headGroup.rotation.y = (Math.random() - 0.5) * 0.8;
+                }
+                break;
+                
+            case 'RS': // Resting
+                chicken.group.position.y = 0.12;
+                chicken.wingL.rotation.z = -0.3;
+                chicken.wingR.rotation.z = 0.3;
+                break;
+                
+            case 'LS': // Litter scratching
+                animState.scratchPhase += dtSec * 12;
+                const scratch = Math.sin(animState.scratchPhase);
+                if (Math.floor(animState.scratchPhase / Math.PI) % 2 === 0) {
+                    chicken.legL.rotation.x = scratch * 0.5;
+                    chicken.legL.position.z = scratch * 0.02;
+                } else {
+                    chicken.legR.rotation.x = scratch * 0.5;
+                    chicken.legR.position.z = scratch * 0.02;
+                }
+                chicken.headGroup.rotation.x = 0.2;
+                break;
+                
+            case 'PR': // Preening
+                animState.preelPhase += dtSec * 2;
+                chicken.headGroup.rotation.y = Math.sin(animState.preelPhase) * 1.2;
+                chicken.headGroup.rotation.x = 0.3;
+                break;
+                
+            case 'HS': // Head scratching
+                animState.scratchPhase += dtSec * 15;
+                chicken.legR.rotation.x = -0.8;
+                chicken.legR.rotation.z = 0.5;
+                chicken.headGroup.rotation.z = Math.sin(animState.scratchPhase) * 0.15;
+                break;
+                
+            case 'BS': // Body shaking
+                animState.walkPhase += dtSec * 30;
+                chicken.body.rotation.z = Math.sin(animState.walkPhase) * 0.15;
+                chicken.wingL.rotation.z = -0.15 + Math.sin(animState.walkPhase) * 0.3;
+                chicken.wingR.rotation.z = 0.15 - Math.sin(animState.walkPhase) * 0.3;
+                break;
+                
+            case 'TW': // Tail wagging
+                animState.walkPhase += dtSec * 20;
+                chicken.tail.rotation.y = Math.sin(animState.walkPhase) * 0.4;
+                break;
+                
+            case 'DB': // Dustbathing
+                animState.dustbathPhase += dtSec * 4;
+                chicken.group.position.y = 0.1;
+                chicken.group.rotation.z = Math.sin(animState.dustbathPhase) * 0.2;
+                chicken.wingL.rotation.z = -0.4 + Math.sin(animState.dustbathPhase * 2) * 0.3;
+                chicken.wingR.rotation.z = 0.4 - Math.sin(animState.dustbathPhase * 2) * 0.3;
+                break;
+        }
+        
+        // Smooth position updates
+        if (behavior !== 'RS' && behavior !== 'DB') {
+            chicken.group.position.y += (0.18 - chicken.group.position.y) * dtSec * 5;
+        }
+        
+        chicken.group.rotation.z *= 0.9;
+        
+        // Rotation smoothing
+        const rotDiff = animState.targetRot - animState.bodyRot;
+        animState.bodyRot += rotDiff * dtSec * 3;
+        chicken.group.rotation.y = animState.bodyRot;
+        
+        // Position
+        chicken.group.position.x = animState.bodyPos.x;
+        chicken.group.position.z = animState.bodyPos.z;
+        
+        // Bounds
+        if (Math.abs(animState.bodyPos.x) > 0.8) {
+            animState.targetRot = Math.atan2(-animState.bodyPos.x, animState.bodyPos.z);
+        }
+        if (Math.abs(animState.bodyPos.z) > 0.6) {
+            animState.targetRot = Math.atan2(animState.bodyPos.x, -animState.bodyPos.z);
+        }
+        
+        // Head stabilization
+        const bodyWorldPos = { x: animState.bodyPos.x, z: animState.bodyPos.z };
+        if (behavior === 'MV') {
+            // Head bobbing
+            animState.headStable.x += (bodyWorldPos.x - animState.headStable.x) * dtSec * 3;
+            animState.headStable.z += (bodyWorldPos.z + 0.15 - animState.headStable.z) * dtSec * 3;
+        } else {
+            animState.headStable.x += (bodyWorldPos.x - animState.headStable.x) * dtSec * 5;
+            animState.headStable.z += (bodyWorldPos.z + 0.15 - animState.headStable.z) * dtSec * 5;
+        }
+        
+        if (behavior !== 'ET' && behavior !== 'DK' && behavior !== 'HS') {
+            chicken.headGroup.position.x = animState.headStable.x;
+            chicken.headGroup.position.z = animState.headStable.z;
+        }
+        
+        // Breathing
+        const breathe = Math.sin(performance.now() / 600) * 0.008;
+        chicken.body.scale.y = 0.85 + breathe;
+    }
+    
+    // =========================================
+    // UI UPDATES
+    // =========================================
+    
+    function updateUI() {
+        // Welfare
+        const welfare = calculateWelfare();
+        document.getElementById('welfare-score').textContent = welfare;
+        document.getElementById('welfare-circle').style.setProperty('--welfare', welfare);
+        
+        const welfareColor = welfare > 70 ? '#4ecdc4' : welfare > 40 ? '#f97316' : '#ff6b6b';
+        document.getElementById('welfare-score').style.color = welfareColor;
+        
+        // Complexity
+        const complexity = calculateComplexity();
+        document.getElementById('complexity-value').textContent = (complexity * 5).toFixed(2);
+        document.getElementById('complexity-fill').style.width = (complexity * 100) + '%';
+        
+        // Current state
+        document.getElementById('current-behavior').textContent = BEHAVIORS[state.currentBehavior].name.toUpperCase();
+        document.getElementById('current-location').textContent = state.currentLocation;
+        
+        // Stats
+        const elapsed = Math.floor((Date.now() - state.stats.startTime) / 1000);
+        const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const secs = (elapsed % 60).toString().padStart(2, '0');
+        document.getElementById('stat-time').textContent = `${mins}:${secs}`;
+        document.getElementById('stat-transitions').textContent = state.stats.totalTransitions;
+        
+        const activeBehaviors = Object.values(state.stats.behaviorCounts).filter(c => c > 0).length;
+        document.getElementById('stat-behaviors').textContent = activeBehaviors;
+        
+        // Needs
+        updateNeedsDisplay();
+        
+        // Behavior distribution
+        updateBehaviorDistribution();
+    }
+    
+    function updateNeedsDisplay() {
+        const container = document.getElementById('needs-display');
+        const needs = [
+            { key: 'hunger', name: 'Hunger', icon: '🌾' },
+            { key: 'thirst', name: 'Durst', icon: '💧' },
+            { key: 'dustbath', name: 'Sandbad', icon: '🏖️' },
+            { key: 'rest', name: 'Ruhe', icon: '😴' },
+            { key: 'comfort', name: 'Komfort', icon: '✨' }
+        ];
+        
+        container.innerHTML = needs.map(n => {
+            const val = state.needs[n.key] * 100;
+            const level = val > 70 ? 'high' : val > 40 ? 'medium' : 'low';
+            return `
+                <div class="need-row">
+                    <span class="need-icon">${n.icon}</span>
+                    <span class="need-name">${n.name}</span>
+                    <div class="need-bar">
+                        <div class="need-fill ${level}" style="width: ${val}%"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    function updateBehaviorDistribution() {
+        const container = document.getElementById('behavior-distribution');
+        const total = Object.values(state.stats.behaviorCounts).reduce((a, b) => a + b, 0) || 1;
+        
+        const sorted = Object.entries(state.stats.behaviorCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+        
+        container.innerHTML = sorted.map(([code, count]) => {
+            const b = BEHAVIORS[code];
+            const pct = (count / total * 100).toFixed(1);
+            return `
+                <div class="behavior-item">
+                    <div class="behavior-icon" style="background: ${b.color}22; color: ${b.color}">
+                        ${b.icon}
+                    </div>
+                    <span class="behavior-name">${b.name}</span>
+                    <div class="behavior-bar">
+                        <div class="behavior-bar-fill" style="width: ${pct}%; background: ${b.color}"></div>
+                    </div>
+                    <span class="behavior-pct">${pct}%</span>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    function addLog(msg, type) {
+        const time = new Date().toLocaleTimeString().slice(0, 5);
+        state.log.unshift({ time, msg, type });
+        if (state.log.length > 50) state.log.pop();
+        
+        const container = document.getElementById('event-log');
+        container.innerHTML = state.log.slice(0, 10).map(e => `
+            <div class="log-entry">
+                <span class="log-time">${e.time}</span>
+                <span class="log-${e.type}">${e.msg}</span>
+            </div>
+        `).join('');
+    }
+    
+    // =========================================
+    // TRANSITION DIAGRAM
+    // =========================================
+    
+    function drawTransitionDiagram() {
+        const canvas = document.getElementById('transition-canvas');
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        ctx.scale(2, 2);
+        
+        const w = rect.width;
+        const h = rect.height;
+        
+        ctx.fillStyle = '#121a12';
+        ctx.fillRect(0, 0, w, h);
+        
+        const behaviors = Object.keys(BEHAVIORS);
+        const n = behaviors.length;
+        const cx = w / 2;
+        const cy = h / 2;
+        const radius = Math.min(w, h) * 0.38;
+        
+        // Calculate positions
+        const positions = {};
+        behaviors.forEach((b, i) => {
+            const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+            positions[b] = {
+                x: cx + Math.cos(angle) * radius,
+                y: cy + Math.sin(angle) * radius
+            };
+        });
+        
+        // Draw transitions
+        const maxCount = Math.max(...Object.values(state.stats.transitionMatrix).flatMap(r => Object.values(r))) || 1;
+        
+        behaviors.forEach(from => {
+            behaviors.forEach(to => {
+                const count = state.stats.transitionMatrix[from][to];
+                if (count > 0 && from !== to) {
+                    const strength = count / maxCount;
+                    const fromPos = positions[from];
+                    const toPos = positions[to];
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(168, 85, 247, ${0.2 + strength * 0.6})`;
+                    ctx.lineWidth = 0.5 + strength * 2;
+                    
+                    // Curved line
+                    const mx = (fromPos.x + toPos.x) / 2;
+                    const my = (fromPos.y + toPos.y) / 2;
+                    const dx = toPos.x - fromPos.x;
+                    const dy = toPos.y - fromPos.y;
+                    const nx = -dy * 0.2;
+                    const ny = dx * 0.2;
+                    
+                    ctx.moveTo(fromPos.x, fromPos.y);
+                    ctx.quadraticCurveTo(mx + nx, my + ny, toPos.x, toPos.y);
+                    ctx.stroke();
+                }
+            });
+        });
+        
+        // Draw nodes
+        behaviors.forEach(b => {
+            const pos = positions[b];
+            const info = BEHAVIORS[b];
+            const isActive = b === state.currentBehavior;
+            
+            // Circle
+            ctx.beginPath();
+            ctx.fillStyle = isActive ? info.color : '#1a251a';
+            ctx.strokeStyle = info.color;
+            ctx.lineWidth = isActive ? 2 : 1;
+            ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Emoji
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(info.icon, pos.x, pos.y);
+        });
+    }
+    
+    // =========================================
+    // CONTROLS
+    // =========================================
+    
+    function setEnvironment(env) {
+        state.environment = env;
+        
+        document.querySelectorAll('.env-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${env}`).classList.add('active');
+        
+        addLog(`Umgebung: ${ENVIRONMENTS[env].name}`, 'location');
+    }
+    
+    function updateSlider(type) {
+        const val = document.getElementById(`s-${type}`).value;
+        document.getElementById(`v-${type}`).textContent = val + '%';
+        
+        if (type === 'aerial') state.threats.aerial = val / 100;
+        if (type === 'ground') state.threats.ground = val / 100;
+    }
+    
+    function triggerAction(action) {
+        switch (action) {
+            case 'hawk':
+                state.threats.aerial = 0.9;
+                document.getElementById('s-aerial').value = 90;
+                document.getElementById('v-aerial').textContent = '90%';
+                addLog('🦅 HABICHT GESICHTET!', 'behavior');
+                break;
+            case 'fox':
+                state.threats.ground = 0.8;
+                document.getElementById('s-ground').value = 80;
+                document.getElementById('v-ground').textContent = '80%';
+                addLog('🦊 FUCHS GESICHTET!', 'behavior');
+                break;
+            case 'food':
+                state.needs.hunger = 0.9;
+                addLog('🌾 Futter angeboten', 'behavior');
+                break;
+            case 'water':
+                state.needs.thirst = 0.9;
+                addLog('💧 Wasser angeboten', 'behavior');
+                break;
+            case 'dustbath':
+                state.needs.dustbath = 0.95;
+                addLog('🏖️ Sandbad bereit', 'behavior');
+                break;
+        }
+    }
+    
+    function resetSimulation() {
+        // Reset stats
+        Object.keys(BEHAVIORS).forEach(b => {
+            state.stats.behaviorCounts[b] = 0;
+            Object.keys(BEHAVIORS).forEach(b2 => {
+                state.stats.transitionMatrix[b][b2] = 0;
+            });
+        });
+        state.stats.totalTransitions = 0;
+        state.stats.startTime = Date.now();
+        
+        // Reset needs
+        state.needs = { hunger: 0.3, thirst: 0.2, dustbath: 0.4, rest: 0.2, comfort: 0.3 };
+        state.threats = { aerial: 0, ground: 0 };
+        
+        // Reset position
+        animState.bodyPos = { x: 0, z: 0 };
+        animState.bodyRot = 0;
+        animState.targetRot = 0;
+        
+        // Reset sliders
+        ['aerial', 'ground'].forEach(s => {
+            document.getElementById(`s-${s}`).value = 0;
+            document.getElementById(`v-${s}`).textContent = '0%';
+        });
+        
+        state.log = [];
+        addLog('🔄 Simulation zurückgesetzt', 'behavior');
+    }
+    
+    function onResize() {
+        const container = document.getElementById('canvas-container');
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+    
+    // =========================================
+    // MAIN LOOP
+    // =========================================
+    
+    let lastTime = 0;
+    let behaviorDuration = 2000;
+    let behaviorTimer = 0;
+    
+    function animate(time = 0) {
+        requestAnimationFrame(animate);
+        
+        const dt = Math.min(100, time - lastTime);
+        lastTime = time;
+        
+        // Update behavior timer
+        behaviorTimer += dt;
+        if (behaviorTimer >= behaviorDuration) {
+            behaviorDuration = transitionBehavior();
+            behaviorTimer = 0;
+        }
+        
+        // Update simulation
+        updateNeeds(dt);
+        animateChicken(dt, state.currentBehavior);
+        
+        // Update UI (throttled)
+        if (Math.floor(time / 250) !== Math.floor((time - dt) / 250)) {
+            updateUI();
+            drawTransitionDiagram();
+        }
+        
+        // Camera
+        camera.position.x += (animState.bodyPos.x * 0.3 - camera.position.x + 0.8) * dt * 0.002;
+        camera.position.z += (animState.bodyPos.z * 0.3 + 1.2 - camera.position.z) * dt * 0.002;
+        camera.lookAt(animState.bodyPos.x, 0.2, animState.bodyPos.z);
+        
+        renderer.render(scene, camera);
+    }
+    
+    // Initialize
+    initThree();
+    updateUI();
+    addLog('🐔 Simulation gestartet', 'behavior');
+    animate();
+    </script>
+
+    <!-- Mobile bottom navigation (shown on small screens) -->
+    <nav class="mobile-nav" aria-label="Mobile Navigation">
+        <button type="button" id="mnav-controls" onclick="setMobileView('controls')">
+            <span class="micon">🧪</span>
+            <span>Kontrolle</span>
+        </button>
+        <button type="button" id="mnav-sim" onclick="setMobileView('sim')">
+            <span class="micon">🐔</span>
+            <span>Simulation</span>
+        </button>
+        <button type="button" id="mnav-metrics" onclick="setMobileView('metrics')">
+            <span class="micon">📈</span>
+            <span>Analyse</span>
+        </button>
+    </nav>
+
+
+    <script>
+        // Mobile view switching
+        function setMobileView(view) {
+            document.body.setAttribute('data-mobile-view', view);
+            const btns = [
+                ['controls', document.getElementById('mnav-controls')],
+                ['sim', document.getElementById('mnav-sim')],
+                ['metrics', document.getElementById('mnav-metrics')],
+            ];
+            for (const [v, el] of btns) {
+                if (!el) continue;
+                el.classList.toggle('active', v === view);
+            }
+        }
+
+        // Default mobile view: simulation
+        (function initMobileNav() {
+            // only activate on small screens
+            const mq = window.matchMedia('(max-width: 900px)');
+            function apply() {
+                if (!mq.matches) {
+                    document.body.removeAttribute('data-mobile-view');
+                    return;
+                }
+                const current = document.body.getAttribute('data-mobile-view') || 'sim';
+                setMobileView(current);
+            }
+            mq.addEventListener?.('change', apply);
+            window.addEventListener('resize', apply);
+            apply();
+        })();
+    </script>
+
+</body>
+</html>
