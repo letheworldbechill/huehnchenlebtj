@@ -66,7 +66,9 @@
             font-weight: 600;
             background: linear-gradient(135deg, var(--accent-gold), var(--accent-green));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
+            color: transparent;
         }
         
         .logo-subtitle {
@@ -395,7 +397,9 @@
             font-weight: 800;
             background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
+            color: transparent;
         }
         
         .complexity-label {
@@ -667,21 +671,21 @@
                         <span>🦅 Luftbedrohung</span>
                         <span class="slider-value" id="v-aerial">0%</span>
                     </div>
-                    <input type="range" id="s-aerial" min="0" max="100" value="0" oninput="updateSlider('aerial')">
+                    <input type="range" id="s-aerial" min="0" max="100" value="0" oninput="updateSlider('aerial')" aria-label="Luftbedrohung">
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>🦊 Bodenbedrohung</span>
                         <span class="slider-value" id="v-ground">0%</span>
                     </div>
-                    <input type="range" id="s-ground" min="0" max="100" value="0" oninput="updateSlider('ground')">
+                    <input type="range" id="s-ground" min="0" max="100" value="0" oninput="updateSlider('ground')" aria-label="Bodenbedrohung">
                 </div>
                 <div class="slider-group">
                     <div class="slider-label">
                         <span>👥 Besatzdichte</span>
                         <span class="slider-value" id="v-density">50%</span>
                     </div>
-                    <input type="range" id="s-density" min="10" max="100" value="50" oninput="updateSlider('density')">
+                    <input type="range" id="s-density" min="10" max="100" value="50" oninput="updateSlider('density')" aria-label="Besatzdichte">
                 </div>
             </div>
             
@@ -1243,7 +1247,7 @@ function updateNeeds(dt) {
         peckPhase: 0,
         scratchPhase: 0,
         dustbathPhase: 0,
-        preelPhase: 0,
+        preenPhase: 0,
         bodyPos: { x: 0, z: 0 },
         bodyRot: 0,
         targetRot: 0,
@@ -1480,151 +1484,9 @@ function updateNeeds(dt) {
     }
     
     // =========================================
-    // BEHAVIOR LOGIC
+    // WELFARE CALCULATIONS
     // =========================================
-    
-    function selectNextBehavior() {
-        const env = ENVIRONMENTS[state.environment];
-        const transitions = env.transitions[state.currentBehavior] || {};
-        
-        // Modify probabilities based on needs
-        let modifiedProbs = { ...transitions };
-        
-        // Hunger increases eating probability
-        if (state.needs.hunger > 0.6 && modifiedProbs.ET !== undefined) {
-            modifiedProbs.ET = (modifiedProbs.ET || 0) + state.needs.hunger * 0.3;
-        }
-        
-        // Thirst increases drinking probability
-        if (state.needs.thirst > 0.6 && modifiedProbs.DK !== undefined) {
-            modifiedProbs.DK = (modifiedProbs.DK || 0) + state.needs.thirst * 0.3;
-        }
-        
-        // Dustbath need
-        if (state.needs.dustbath > 0.7 && env.availableBehaviors.includes('DB')) {
-            modifiedProbs.DB = (modifiedProbs.DB || 0) + state.needs.dustbath * 0.3;
-            modifiedProbs.LS = (modifiedProbs.LS || 0) + state.needs.dustbath * 0.15;
-        }
-        
-        // Rest need
-        if (state.needs.rest > 0.7) {
-            modifiedProbs.RS = (modifiedProbs.RS || 0) + state.needs.rest * 0.3;
-        }
-        
-        // Comfort behaviors when comfortable
-        if (state.needs.comfort < 0.3) {
-            ['PR', 'HS', 'BS', 'TW'].forEach(b => {
-                if (env.availableBehaviors.includes(b)) {
-                    modifiedProbs[b] = (modifiedProbs[b] || 0) + 0.1;
-                }
-            });
-        }
-        
-        // Threats override everything
-        if (state.threats.aerial > 0.5 || state.threats.ground > 0.5) {
-            return 'MV'; // Flee
-        }
-        
-        // Filter to available behaviors
-        const available = {};
-        let total = 0;
-        Object.keys(modifiedProbs).forEach(b => {
-            if (env.availableBehaviors.includes(b)) {
-                available[b] = modifiedProbs[b];
-                total += modifiedProbs[b];
-            }
-        });
-        
-        // Normalize and select
-        const rand = Math.random() * total;
-        let cumulative = 0;
-        for (const [behavior, prob] of Object.entries(available)) {
-            cumulative += prob;
-            if (rand <= cumulative) {
-                return behavior;
-            }
-        }
-        
-        return 'ST'; // Default
-    }
-    
-    function getBehaviorDuration(behavior) {
-        const baseDurations = {
-            ET: 3000, DK: 2000, MV: 2500, ST: 3000, RS: 8000,
-            LS: 4000, PR: 5000, HS: 1500, BS: 800, TW: 600, DB: 10000
-        };
-        const base = baseDurations[behavior] || 2000;
-        return base * (0.7 + Math.random() * 0.6);
-    }
-    
-    function transitionBehavior() {
-        const prevBehavior = state.currentBehavior;
-        const nextBehavior = selectNextBehavior();
-        
-        if (nextBehavior !== prevBehavior) {
-            // Record transition
-            state.stats.transitionMatrix[prevBehavior][nextBehavior]++;
-            state.stats.totalTransitions++;
-            
-            // Log
-            addLog(`${BEHAVIORS[prevBehavior].icon} → ${BEHAVIORS[nextBehavior].icon}`, 'transition');
-            
-            state.currentBehavior = nextBehavior;
-            state.behaviorTime = 0;
-        }
-        
-        state.stats.behaviorCounts[state.currentBehavior]++;
-        
-        return getBehaviorDuration(state.currentBehavior);
-    }
-    
-    // =========================================
-    // NEEDS & WELFARE
-    // =========================================
-    
-    function updateNeeds(dt) {
-        const dtSec = dt / 1000;
-        
-        // Increase needs over time
-        state.needs.hunger = Math.min(1, state.needs.hunger + dtSec / 300);
-        state.needs.thirst = Math.min(1, state.needs.thirst + dtSec / 200);
-        state.needs.dustbath = Math.min(1, state.needs.dustbath + dtSec / 600);
-        state.needs.rest = Math.min(1, state.needs.rest + dtSec / 400);
-        state.needs.comfort = Math.min(1, state.needs.comfort + dtSec / 500);
-        
-        // Satisfy needs based on behavior
-        switch (state.currentBehavior) {
-            case 'ET':
-                state.needs.hunger = Math.max(0, state.needs.hunger - dtSec * 0.15);
-                break;
-            case 'DK':
-                state.needs.thirst = Math.max(0, state.needs.thirst - dtSec * 0.2);
-                break;
-            case 'DB':
-                state.needs.dustbath = Math.max(0, state.needs.dustbath - dtSec * 0.1);
-                state.needs.comfort = Math.max(0, state.needs.comfort - dtSec * 0.08);
-                break;
-            case 'RS':
-                state.needs.rest = Math.max(0, state.needs.rest - dtSec * 0.12);
-                break;
-            case 'PR':
-            case 'HS':
-            case 'BS':
-            case 'TW':
-                state.needs.comfort = Math.max(0, state.needs.comfort - dtSec * 0.1);
-                break;
-        }
-        
-        // Threats increase needs
-        if (state.threats.aerial > 0 || state.threats.ground > 0) {
-            state.needs.comfort = Math.min(1, state.needs.comfort + dtSec * 0.3);
-        }
-        
-        // Decay threats
-        state.threats.aerial = Math.max(0, state.threats.aerial - dtSec * 0.1);
-        state.threats.ground = Math.max(0, state.threats.ground - dtSec * 0.12);
-    }
-    
+
     function calculateWelfare() {
         const env = ENVIRONMENTS[state.environment];
         let welfare = env.welfareBase;
@@ -1767,8 +1629,8 @@ function updateNeeds(dt) {
                 break;
                 
             case 'PR': // Preening
-                animState.preelPhase += dtSec * 2;
-                chicken.headGroup.rotation.y = Math.sin(animState.preelPhase) * 1.2;
+                animState.preenPhase += dtSec * 2;
+                chicken.headGroup.rotation.y = Math.sin(animState.preenPhase) * 1.2;
                 chicken.headGroup.rotation.x = 0.3;
                 break;
                 
